@@ -1,25 +1,34 @@
 package com.mlawrow.rectask.service;
-import com.mlawrow.rectask.dto.GithubDTO;
-import com.mlawrow.rectask.model.Github;
+
+import com.mlawrow.rectask.api.client.GithubClient;
+import com.mlawrow.rectask.api.githubdata.UserRepository;
+import java.util.Arrays;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 
-
+@Slf4j
 @Service
 public class GithubService {
 
-    public List<GithubDTO> getGithubData(){
-        return ((List<Github>))
+    @Autowired
+    private GithubClient githubClient;
+
+    public List<UserRepository> getUserDetails(String username) {
+        log.info("Calling for github data with username: {}", username);
+        githubClient.getUserDetails(username);
+
+        var userRepositories = Arrays.asList(githubClient.getUserDetails(username));
+
+        // for each repo call & fill branches & commits
+        userRepositories.forEach(repo -> {
+            var repoName = repo.getName();
+            log.info("Calling for repository: {} branch data with username: {}", repoName, username);
+            repo.setBranches(Arrays.asList(githubClient.getRepositoryBranches(username, repoName)));
+        });
+
+        return userRepositories;
     }
-
-    private GithubDTO convertToGithubDTO(Github github){
-        GithubDTO githubDTO = new GithubDTO();
-        githubDTO.setOwnerLogin(github.getOwnerLogin());
-        githubDTO.setRepoName(github.getRepoName());
-        githubDTO.setBranches(github.getBranches());
-
-        return githubDTO;
-    }
-
 }
